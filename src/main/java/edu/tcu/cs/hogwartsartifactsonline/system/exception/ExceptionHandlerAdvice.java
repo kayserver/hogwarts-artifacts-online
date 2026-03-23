@@ -3,6 +3,7 @@ package edu.tcu.cs.hogwartsartifactsonline.system.exception;
 import edu.tcu.cs.hogwartsartifactsonline.artifact.ArtifactNotFoundException;
 import edu.tcu.cs.hogwartsartifactsonline.system.Result;
 import edu.tcu.cs.hogwartsartifactsonline.system.StatusCode;
+import edu.tcu.cs.hogwartsartifactsonline.wizard.WizardNotFoundException;  // ← ADDED THIS IMPORT
 import jdk.jshell.Snippet;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
@@ -24,12 +25,20 @@ public class ExceptionHandlerAdvice {
     Result handleArtifactNotFoundException(ArtifactNotFoundException ex) {
         return new Result(false, StatusCode.NOT_FOUND, ex.getMessage());
     }
+
+    // ← ADDED THIS NEW HANDLER FOR WIZARD NOT FOUND
+    @ExceptionHandler(WizardNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    Result handleWizardNotFoundException(WizardNotFoundException ex) {
+        return new Result(false, StatusCode.NOT_FOUND, ex.getMessage());
+    }
+
     /**
      * This handles invalid inputs
      *
-    * @param ex
-    * @return
-    */
+     * @param ex
+     * @return
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     Result handleValidationException(MethodArgumentNotValidException ex) {
@@ -41,7 +50,5 @@ public class ExceptionHandlerAdvice {
             map.put(key, val);
         });
         return new Result(false, StatusCode.INVALID_ARGUMENT, "Provided arguments are invalid, see data for details.", map);
-
-
     }
 }
