@@ -13,6 +13,6 @@ public class WizardToWizardDtoConverter implements Converter<Wizard, WizardDto> 
         WizardDto wizardDto = new WizardDto(source.getId(),
                                             source.getName(),
                                             source.getNumberOfArtifacts());
-        return null;
+        return wizardDto;
     }
 }
