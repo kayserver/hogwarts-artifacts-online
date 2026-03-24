@@ -2,6 +2,8 @@ package edu.tcu.cs.hogwartsartifactsonline.system;
 
 import edu.tcu.cs.hogwartsartifactsonline.artifact.Artifact;
 import edu.tcu.cs.hogwartsartifactsonline.artifact.ArtifactRepository;
+import edu.tcu.cs.hogwartsartifactsonline.hogwartsuser.HogwartsUser;
+import edu.tcu.cs.hogwartsartifactsonline.hogwartsuser.UserRepository;
 import edu.tcu.cs.hogwartsartifactsonline.wizard.Wizard;
 import edu.tcu.cs.hogwartsartifactsonline.wizard.WizardRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -10,18 +12,26 @@ import org.springframework.stereotype.Component;
 @Component
 public class DBDataInitializer implements CommandLineRunner {
 
-    private  final ArtifactRepository artifactRepository;
+    private final ArtifactRepository artifactRepository;
+    private final WizardRepository wizardRepository;
+    private final UserRepository userRepository;
 
-    private final WizardRepository wizardRespository;
-
-
-    public DBDataInitializer(ArtifactRepository artifactRepository, WizardRepository wizardRespository) {
+    public DBDataInitializer(ArtifactRepository artifactRepository,
+                             WizardRepository wizardRepository,
+                             UserRepository userRepository) {
         this.artifactRepository = artifactRepository;
-        this.wizardRespository = wizardRespository;
+        this.wizardRepository = wizardRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
     public void run(String... args) throws Exception {
+        // Skip if data already exists
+        if (artifactRepository.count() > 0) {
+            return;
+        }
+
+        // Create Artifacts
         Artifact a1 = new Artifact();
         a1.setId("1250808601744904191");
         a1.setName("Deluminator");
@@ -30,10 +40,9 @@ public class DBDataInitializer implements CommandLineRunner {
 
         Artifact a2 = new Artifact();
         a2.setId("1250808601744904192");
-        a2.setName("Invisible Cloak");
+        a2.setName("Invisibility Cloak");
         a2.setDescription("An invisibility cloak is used to make the wearer invisible.");
         a2.setImageUrl("ImageUrl");
-
 
         Artifact a3 = new Artifact();
         a3.setId("1250808601744904193");
@@ -59,8 +68,9 @@ public class DBDataInitializer implements CommandLineRunner {
         a6.setDescription("The Resurrection Stone allows the holder to bring back deceased loved ones, in a semi-physical form, and communicate with them.");
         a6.setImageUrl("ImageUrl");
 
+        // Create Wizards (don't save artifacts separately - let cascade handle it)
         Wizard w1 = new Wizard();
-        w1.setName("Albus Dumledore");
+        w1.setName("Albus Dumbledore");
         w1.addArtifact(a1);
         w1.addArtifact(a3);
 
@@ -73,10 +83,36 @@ public class DBDataInitializer implements CommandLineRunner {
         w3.setName("Neville Longbottom");
         w3.addArtifact(a5);
 
-        wizardRespository.save(w1);
-        wizardRespository.save(w2);
-        wizardRespository.save(w3);
+        // Save Wizards - this will also save the artifacts due to cascade
+        wizardRepository.save(w1);
+        wizardRepository.save(w2);
+        wizardRepository.save(w3);
 
+        // Save the remaining artifact without a wizard
         artifactRepository.save(a6);
+
+        // Create Users
+        HogwartsUser u1 = new HogwartsUser();
+        u1.setUsername("john");
+        u1.setPassword("123456");
+        u1.setEnabled(true);
+        u1.setRoles("admin user");
+
+        HogwartsUser u2 = new HogwartsUser();
+        u2.setUsername("eric");
+        u2.setPassword("654321");
+        u2.setEnabled(true);
+        u2.setRoles("user");
+
+        HogwartsUser u3 = new HogwartsUser();
+        u3.setUsername("tom");
+        u3.setPassword("qwerty");
+        u3.setEnabled(false);
+        u3.setRoles("user");
+
+        // Save Users
+        userRepository.save(u1);
+        userRepository.save(u2);
+        userRepository.save(u3);
     }
 }
