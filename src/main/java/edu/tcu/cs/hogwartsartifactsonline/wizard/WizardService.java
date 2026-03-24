@@ -1,5 +1,6 @@
 package edu.tcu.cs.hogwartsartifactsonline.wizard;
 
+import edu.tcu.cs.hogwartsartifactsonline.system.exception.ObjectNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,27 +16,33 @@ public class WizardService {
         this.wizardRepository = wizardRepository;
     }
 
-    public Wizard findById(Integer id) {
-        return wizardRepository.findById(id)
-                .orElseThrow(() -> new WizardNotFoundException(id));
-    }
-
     public List<Wizard> findAll() {
         return wizardRepository.findAll();
     }
 
-    public Wizard save(Wizard wizard) {
-        return wizardRepository.save(wizard);
+    public Wizard findById(Integer wizardId) {
+        return this.wizardRepository.findById(wizardId)
+                .orElseThrow(() -> new ObjectNotFoundException("wizard", wizardId));
     }
 
-    public Wizard update(Integer id, Wizard wizard) {
-        Wizard foundWizard = this.findById(id);
-        foundWizard.setName(wizard.getName());
-        return wizardRepository.save(foundWizard);
+
+    public Wizard save(Wizard newWizard) {
+        return wizardRepository.save(newWizard);
     }
 
-    public void delete(Integer id) {
-        Wizard wizard = this.findById(id);
-        wizardRepository.delete(wizard);
+    public Wizard update(Integer wizardId, Wizard update) {
+        return this.wizardRepository.findById(wizardId)
+                .map(oldWizard -> {
+                    oldWizard.setName(update.getName());
+                    return this.wizardRepository.save(oldWizard);
+                })
+                .orElseThrow(() -> new ObjectNotFoundException("wizard", wizardId));
+    }
+
+    public void delete(Integer wizardId) {
+        Wizard wizardToBeDeleted = this.wizardRepository.findById(wizardId)
+                        .orElseThrow(() -> new ObjectNotFoundException("wizard", wizardId));
+        wizardToBeDeleted.removeAllArtifacts();
+        this.wizardRepository.deleteById(wizardId);
     }
 }
