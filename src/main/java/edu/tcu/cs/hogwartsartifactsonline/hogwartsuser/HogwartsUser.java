@@ -1,11 +1,14 @@
 package edu.tcu.cs.hogwartsartifactsonline.hogwartsuser;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotEmpty;
+
 import java.io.Serializable;
 
 @Entity
-@Table(name = "hogwarts_user")
 public class HogwartsUser implements Serializable {
 
     @Id
@@ -23,14 +26,8 @@ public class HogwartsUser implements Serializable {
     @NotEmpty(message = "roles are required.")
     private String roles; // Space separated string
 
-    public HogwartsUser() {
-    }
 
-    public HogwartsUser(String username, String password, boolean enabled, String roles) {
-        this.username = username;
-        this.password = password;
-        this.enabled = enabled;
-        this.roles = roles;
+    public HogwartsUser() {
     }
 
     public Integer getId() {
@@ -73,14 +70,4 @@ public class HogwartsUser implements Serializable {
         this.roles = roles;
     }
 
-    @Override
-    public String toString() {
-        return "HogwartsUser{" +
-                "id=" + id +
-                ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
-                ", enabled=" + enabled +
-                ", roles='" + roles + '\'' +
-                '}';
-    }
 }

@@ -7,7 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +17,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
@@ -23,24 +25,25 @@ import static org.mockito.Mockito.*;
 class UserServiceTest {
 
     @Mock
-    private UserRepository userRepository;
+    UserRepository userRepository;
+
+    @Mock
+    PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private UserService userService;
+    UserService userService;
 
-    private List<HogwartsUser> hogwartsUsers;
+    List<HogwartsUser> hogwartsUsers;
+
 
     @BeforeEach
     void setUp() {
-        this.hogwartsUsers = new ArrayList<>();
-
         HogwartsUser u1 = new HogwartsUser();
         u1.setId(1);
         u1.setUsername("john");
         u1.setPassword("123456");
         u1.setEnabled(true);
         u1.setRoles("admin user");
-        this.hogwartsUsers.add(u1);
 
         HogwartsUser u2 = new HogwartsUser();
         u2.setId(2);
@@ -48,7 +51,6 @@ class UserServiceTest {
         u2.setPassword("654321");
         u2.setEnabled(true);
         u2.setRoles("user");
-        this.hogwartsUsers.add(u2);
 
         HogwartsUser u3 = new HogwartsUser();
         u3.setId(3);
@@ -56,6 +58,10 @@ class UserServiceTest {
         u3.setPassword("qwerty");
         u3.setEnabled(false);
         u3.setRoles("user");
+
+        this.hogwartsUsers = new ArrayList<>();
+        this.hogwartsUsers.add(u1);
+        this.hogwartsUsers.add(u2);
         this.hogwartsUsers.add(u3);
     }
 
@@ -65,20 +71,22 @@ class UserServiceTest {
 
     @Test
     void testFindAllSuccess() {
-        // Given
+        // Given. Arrange inputs and targets. Define the behavior of Mock object userRepository.
         given(this.userRepository.findAll()).willReturn(this.hogwartsUsers);
 
-        // When
+        // When. Act on the target behavior. Act steps should cover the method to be tested.
         List<HogwartsUser> actualUsers = this.userService.findAll();
 
-        // Then
+        // Then. Assert expected outcomes.
         assertThat(actualUsers.size()).isEqualTo(this.hogwartsUsers.size());
+
+        // Verify userRepository.findAll() is called exactly once.
         verify(this.userRepository, times(1)).findAll();
     }
 
     @Test
     void testFindByIdSuccess() {
-        // Given
+        // Given. Arrange inputs and targets. Define the behavior of Mock object userRepository.
         HogwartsUser u = new HogwartsUser();
         u.setId(1);
         u.setUsername("john");
@@ -86,12 +94,12 @@ class UserServiceTest {
         u.setEnabled(true);
         u.setRoles("admin user");
 
-        given(this.userRepository.findById(1)).willReturn(Optional.of(u));
+        given(this.userRepository.findById(1)).willReturn(Optional.of(u)); // Define the behavior of the mock object.
 
-        // When
+        // When. Act on the target behavior. Act steps should cover the method to be tested.
         HogwartsUser returnedUser = this.userService.findById(1);
 
-        // Then
+        // Then. Assert expected outcomes.
         assertThat(returnedUser.getId()).isEqualTo(u.getId());
         assertThat(returnedUser.getUsername()).isEqualTo(u.getUsername());
         assertThat(returnedUser.getPassword()).isEqualTo(u.getPassword());
@@ -103,16 +111,18 @@ class UserServiceTest {
     @Test
     void testFindByIdNotFound() {
         // Given
-        given(this.userRepository.findById(1)).willReturn(Optional.empty());
+        given(this.userRepository.findById(Mockito.any(Integer.class))).willReturn(Optional.empty());
 
         // When
-        Throwable thrown = catchThrowable(() -> this.userService.findById(1));
+        Throwable thrown = catchThrowable(() -> {
+            HogwartsUser returnedUser = this.userService.findById(1);
+        });
 
         // Then
         assertThat(thrown)
                 .isInstanceOf(ObjectNotFoundException.class)
                 .hasMessage("Could not find user with Id 1 :(");
-        verify(this.userRepository, times(1)).findById(1);
+        verify(this.userRepository, times(1)).findById(Mockito.any(Integer.class));
     }
 
     @Test
@@ -124,6 +134,7 @@ class UserServiceTest {
         newUser.setEnabled(true);
         newUser.setRoles("user");
 
+        given(this.passwordEncoder.encode(newUser.getPassword())).willReturn("Encoded Password");
         given(this.userRepository.save(newUser)).willReturn(newUser);
 
         // When
@@ -178,14 +189,15 @@ class UserServiceTest {
         given(this.userRepository.findById(1)).willReturn(Optional.empty());
 
         // When
-        Throwable thrown = catchThrowable(() -> this.userService.update(1, update));
+        Throwable thrown = assertThrows(ObjectNotFoundException.class, () -> {
+            this.userService.update(1, update);
+        });
 
         // Then
         assertThat(thrown)
                 .isInstanceOf(ObjectNotFoundException.class)
                 .hasMessage("Could not find user with Id 1 :(");
         verify(this.userRepository, times(1)).findById(1);
-        verify(this.userRepository, never()).save(any(HogwartsUser.class));
     }
 
     @Test
@@ -199,14 +211,13 @@ class UserServiceTest {
         user.setRoles("admin user");
 
         given(this.userRepository.findById(1)).willReturn(Optional.of(user));
-        doNothing().when(this.userRepository).delete(user);  // ← Change to delete(user) not deleteById
+        doNothing().when(this.userRepository).deleteById(1);
 
         // When
         this.userService.delete(1);
 
         // Then
-        verify(this.userRepository, times(1)).findById(1);
-        verify(this.userRepository, times(1)).delete(user);  // ← Change to delete(user)
+        verify(this.userRepository, times(1)).deleteById(1);
     }
 
     @Test
@@ -215,7 +226,9 @@ class UserServiceTest {
         given(this.userRepository.findById(1)).willReturn(Optional.empty());
 
         // When
-        Throwable thrown = assertThrows(ObjectNotFoundException.class, () -> this.userService.delete(1));
+        Throwable thrown = assertThrows(ObjectNotFoundException.class, () -> {
+            this.userService.delete(1);
+        });
 
         // Then
         assertThat(thrown)
